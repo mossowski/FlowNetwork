@@ -46,7 +46,7 @@ public class FileReader {
 
 				int nextInt = lineScanner.nextInt();
 				if (nextInt >= 0)
-					FlowNetwork.matrix[ySize][xSize] = nextInt;
+					FlowNetwork.capacityMatrix[ySize][xSize] = nextInt;
 				else {
 					System.out.println("Number cannot be less than zero!");
 					System.exit(0);
@@ -92,9 +92,9 @@ public class FileReader {
 	 * @param vertex
 	 */
 	public void checkData(int vertex) {
-		for (int i = vertex; i < FlowNetwork.matrix.length; i++) {
-				if (FlowNetwork.matrix[vertex][i] > 0) {
-					if (i ==  FlowNetwork.matrix.length - 1) {
+		for (int i = vertex; i < FlowNetwork.capacityMatrix.length; i++) {
+				if (FlowNetwork.capacityMatrix[vertex][i] > 0) {
+					if (i ==  FlowNetwork.capacityMatrix.length - 1) {
 						valid = true;
 					}
 					else

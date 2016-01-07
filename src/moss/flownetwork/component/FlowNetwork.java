@@ -2,7 +2,8 @@ package moss.flownetwork.component;
 
 public class FlowNetwork {
 
-	public static int[][] matrix;
+	public static int[][] capacityMatrix;
+	public static int[][] flowMatrix;
 	public static int[][] marks;
 	public static int size;
 	public static int[] heap;
@@ -20,11 +21,13 @@ public class FlowNetwork {
 	// ----------------------------------------------------------------------
 
 	public FlowNetwork() {
-		matrix = new int[size][size];
+		capacityMatrix = new int[size][size];
+		flowMatrix = new int[size][size];
 		marks = new int[size][3];
 		heap = new int[size];
 		heapSize = 0;
 		maximumFlow = 0;
+		resetFlow();
 	}
 
 	// ----------------------------------------------------------------------
@@ -49,21 +52,28 @@ public class FlowNetwork {
 			for (int i = 0; i < size; i++) {
 				// not marked vertexes
 				if (marks[i][0] == NOT_MARKED) {
-					// check for edge
-					if (matrix[heap[currentVertex]][i] > 0) {
-
+					// set mark
+					int capacity = capacityMatrix[heap[currentVertex]][i];
+					int flow = flowMatrix[heap[currentVertex]][i];
+					if (capacity > flow) {
 						// set beginning of edge
 						marks[i][0] = heap[currentVertex];
-
 						// set value
-						marks[i][1] = Math.min(matrix[heap[currentVertex]][i], marks[heap[currentVertex]][1]);
-						
+						marks[i][1] = Math.min(capacity - flow, marks[heap[currentVertex]][1]);
 						// set sign + or -
-						if (heap[currentVertex] < i)
-							marks[i][2] = PLUS;
-	                    else
-	                    	marks[i][2] = MINUS;
-						
+						marks[i][2] = PLUS;
+						// add to heap
+						heap[heapSize] = i;
+						heapSize++;
+					}
+					else if (flowMatrix[i][heap[currentVertex]] > 0) {
+						// set beginning of edge
+						marks[i][0] = heap[currentVertex];
+						// set value
+						int f = flowMatrix[i][heap[currentVertex]];
+						marks[i][1] = Math.min(f, marks[heap[currentVertex]][1]);
+						// set sign + or -
+						marks[i][2] = MINUS;
 						// add to heap
 						heap[heapSize] = i;
 						heapSize++;
@@ -75,10 +85,8 @@ public class FlowNetwork {
 			if (heapSize == currentVertex + 1) {
 				return false;
 			}
-
 			currentVertex++;
 		}
-
 		// update graph after setting marks
 		updateGraph();
 
@@ -92,21 +100,24 @@ public class FlowNetwork {
 	 */
 	public void updateGraph() {
 		int lastVertex = heapSize - 1;
-		int begin = heap[lastVertex];
-		int end = marks[heap[lastVertex]][0];
+		int begin = marks[heap[lastVertex]][0];
+		int end = heap[lastVertex];
 
 		int currentFlow = marks[heap[lastVertex]][1];
 
 		// end if reach source
-		while (end != SOURCE) {
-			matrix[begin][end] += currentFlow;
-			matrix[end][begin] -= currentFlow;
-			begin = end;
-			end = marks[begin][0];
+		while (begin != SOURCE) {
+			// add flow
+			if (marks[end][2] == PLUS) {
+				flowMatrix[begin][end] += currentFlow;
+			}
+			else {
+				flowMatrix[end][begin] -= currentFlow;
+			}
+			// update beginning and ending of edge
+			end = begin;
+			begin = marks[end][0];
 		}
-
-		// add current flow to maximum
-		maximumFlow += currentFlow;
 	}
 
 	// ----------------------------------------------------------------------
@@ -117,6 +128,17 @@ public class FlowNetwork {
 			marks[i][0] = NOT_MARKED;
 			marks[i][1] = 0;
 			marks[i][2] = NO_SIGN;
+		}
+	}
+	
+	// ----------------------------------------------------------------------
+
+	public void resetFlow() {
+		// resets marks values
+		for (int i = 0; i < flowMatrix.length; i++) {
+			for (int j = 0; j < flowMatrix.length; j++) {
+				flowMatrix[i][j] = 0;
+			}
 		}
 	}
 	
@@ -151,9 +173,9 @@ public class FlowNetwork {
 
 	public void printMatrix() {
 		System.out.println("----------Data----------");
-		for (int i = 0; i < matrix.length; i++) {
-			for (int j = 0; j < matrix[i].length; j++) {
-				System.out.print(matrix[i][j] + " ");
+		for (int i = 0; i < capacityMatrix.length; i++) {
+			for (int j = 0; j < capacityMatrix[i].length; j++) {
+				System.out.print(capacityMatrix[i][j] + " ");
 			}
 			System.out.println("");
 		}
@@ -163,7 +185,6 @@ public class FlowNetwork {
 	// ----------------------------------------------------------------------
 
 	public void printResult() {
-		System.out.println("Maximum Flow : " + maximumFlow);
 		System.out.println("----Minimum Cut----");
 		
 		// contain source
@@ -174,6 +195,7 @@ public class FlowNetwork {
 		printArray(S, "S");
 		printArray(T, "T");
 		printEdges(S, T);
+		System.out.println("Maximum Flow : " + maximumFlow);
 	}
 	
 	// ----------------------------------------------------------------------
@@ -191,8 +213,9 @@ public class FlowNetwork {
 	public void printEdges(int[] S, int[] T) {
 		for (int i = 0; i < S.length; i++) {
 			for (int j = 0; j < T.length; j++) {
-				if (matrix[T[j]][S[i]] > 0 && T[j] >  S[i]) {
+				if (capacityMatrix[S[i]][T[j]] > 0) {
 					System.out.println("(" + S[i] + "," + T[j] + ")");
+					maximumFlow += flowMatrix[S[i]][T[j]];
 				}
 			}
 		}
